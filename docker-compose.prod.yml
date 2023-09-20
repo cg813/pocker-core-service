@@ -1,0 +1,41 @@
+version: '3.7'
+
+services:
+  backend:
+    build:
+      context: ./backend/core
+      dockerfile: Dockerfile
+    command: gunicorn config.wsgi:application --workers 6 --bind 0.0.0.0:8000
+    environment:
+      - PYTHONPATH=/usr/src/app/config
+    volumes:
+      - static_volume:/home/app/web/config/staticfiles
+    expose:
+      - 8000
+    env_file:
+      - ./.env.prod
+    networks:
+      - core_network
+
+
+  worker:
+    build:
+      dockerfile: Dockerfile
+      context: ./backend/core
+    command: celery -A config.settings worker -B -l INFO
+    env_file:
+      - ./.env.prod
+    volumes:
+      - ./backend/core:/usr/src/app/
+    depends_on:
+      - backend
+    networks:
+      - core_network
+
+volumes:
+  static_volume:
+
+
+networks:
+  core_network:
+    name: mima_network
